@@ -15,12 +15,44 @@ UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Auto delete file after 1 minutes
-def delete_file_later(path, delay=60):
+def delete_file_later(path, delay=180):
     def remove():
         time.sleep(delay)
         if os.path.exists(path):
             os.remove(path)
     threading.Thread(target=remove).start()
+
+# --- BACKGROUND SWEEPER TO PREVENT SSD LEAKS ---
+CLEANUP_FOLDERS = ['uploads', 'outputs'] # Update these to match your actual folder names
+MAX_AGE_SECONDS = 300 # 5 minutes
+
+def periodic_cleanup():
+    while True:
+        try:
+            current_time = time.time()
+            for folder in CLEANUP_FOLDERS:
+                if not os.path.exists(folder):
+                    continue
+                
+                for filename in os.listdir(folder):
+                    filepath = os.path.join(folder, filename)
+                    
+                    # Check if it's a file and older than MAX_AGE_SECONDS
+                    if os.path.isfile(filepath):
+                        file_age = current_time - os.path.getmtime(filepath)
+                        if file_age > MAX_AGE_SECONDS:
+                            os.remove(filepath)
+                            print(f"Sweeper deleted orphaned file: {filename}")
+        except Exception as e:
+            print(f"Sweeper error: {e}")
+            
+        # Go back to sleep for 5 minutes before checking again
+        time.sleep(300)
+
+# Start the silent background thread
+sweeper_thread = threading.Thread(target=periodic_cleanup, daemon=True)
+sweeper_thread.start()
+# -----------------------------------------------
 
 # Convert RGB tuple to HEX
 def rgb_to_hex(rgb):
