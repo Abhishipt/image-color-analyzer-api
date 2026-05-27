@@ -11,6 +11,9 @@ import time
 app = Flask(__name__)
 CORS(app)
 
+# Enforce the 50MB "Two Doors" rule
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024 
+
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
